@@ -1,26 +1,27 @@
 """Configuration for the LLM Council."""
 
 import os
-from dotenv import load_dotenv
+from pathlib import Path
+import yaml
 
-load_dotenv()
+# Load configuration from YAML file
+_config_path = Path(__file__).parent / "config.yml"
+with open(_config_path) as f:
+    _config = yaml.safe_load(f)
 
-# OpenRouter API key
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+# LiteLLM gateway credentials (OpenAI-compatible API)
+# These should be set in your shell environment (e.g., .zshrc)
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")
 
-# Council members - list of OpenRouter model identifiers
-COUNCIL_MODELS = [
-    "openai/gpt-5.1",
-    "google/gemini-3-pro-preview",
-    "anthropic/claude-sonnet-4.5",
-    "x-ai/grok-4",
-]
+# Council members - list of model identifiers
+COUNCIL_MODELS = _config["council_models"]
 
 # Chairman model - synthesizes final response
-CHAIRMAN_MODEL = "google/gemini-3-pro-preview"
+CHAIRMAN_MODEL = _config["chairman_model"]
 
-# OpenRouter API endpoint
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+# Model for title generation
+TITLE_MODEL = _config.get("title_model", "gemini-2.5-flash")
 
 # Data directory for conversation storage
-DATA_DIR = "data/conversations"
+DATA_DIR = _config.get("data_dir", "data/conversations")

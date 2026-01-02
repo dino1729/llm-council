@@ -1,9 +1,43 @@
 import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import Stage1 from './Stage1';
 import Stage2 from './Stage2';
 import Stage3 from './Stage3';
 import './ChatInterface.css';
+
+// Preprocess text to convert various LaTeX delimiters to standard $ and $$ format
+function preprocessMath(text) {
+  if (!text) return text;
+
+  let result = text;
+
+  // Convert \[ ... \] to $$ ... $$ (display math)
+  // Ensure display math is on its own lines for reliable parsing
+  result = result.replace(/\\\[([\s\S]*?)\\\]/g, (match, content) => {
+    return '\n$$' + content.trim() + '$$\n';
+  });
+
+  // Convert \( ... \) to $ ... $ (inline math)
+  result = result.replace(/\\\(([\s\S]*?)\\\)/g, (match, content) => {
+    return '$' + content.trim() + '$';
+  });
+
+  // Convert [ ... ] containing LaTeX commands to $ ... $ (inline math)
+  // Only match if it contains backslash commands (to avoid matching regular brackets)
+  result = result.replace(/\[\s*(\\[a-zA-Z]+[^\]]*?)\s*\]/g, (match, content) => {
+    return '$' + content.trim() + '$';
+  });
+
+  // Normalize $$ display math blocks: collapse blank lines after opening $$ and before closing $$
+  // This handles LLMs that output $$\n\nequation\n\n$$ format
+  result = result.replace(/\$\$[ \t]*\n\n+/g, '$$\n');
+  result = result.replace(/\n\n+[ \t]*\$\$/g, '\n$$');
+
+  return result;
+}
 
 export default function ChatInterface({
   conversation,
@@ -64,7 +98,7 @@ export default function ChatInterface({
                   <div className="message-label">You</div>
                   <div className="message-content">
                     <div className="markdown-content">
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>{preprocessMath(msg.content)}</ReactMarkdown>
                     </div>
                   </div>
                 </div>

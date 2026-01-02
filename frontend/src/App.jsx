@@ -9,6 +9,17 @@ function App() {
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [currentConversation, setCurrentConversation] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    return localStorage.getItem('llm-council-sidebar-collapsed') === 'true';
+  });
+
+  const handleToggleSidebar = () => {
+    setSidebarCollapsed(prev => {
+      const newValue = !prev;
+      localStorage.setItem('llm-council-sidebar-collapsed', String(newValue));
+      return newValue;
+    });
+  };
 
   // Load conversations on mount
   useEffect(() => {
@@ -188,6 +199,8 @@ function App() {
         currentConversationId={currentConversationId}
         onSelectConversation={handleSelectConversation}
         onNewConversation={handleNewConversation}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={handleToggleSidebar}
       />
       <ChatInterface
         conversation={currentConversation}

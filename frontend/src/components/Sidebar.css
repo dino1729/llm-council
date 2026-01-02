@@ -1,39 +1,105 @@
 .sidebar {
   width: 260px;
-  background: #f8f8f8;
-  border-right: 1px solid #e0e0e0;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-primary);
   display: flex;
   flex-direction: column;
   height: 100vh;
+  transition: width 0.2s ease;
+  overflow: hidden;
+}
+
+.sidebar.collapsed {
+  width: 60px;
 }
 
 .sidebar-header {
   padding: 16px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--border-primary);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sidebar-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .sidebar-header h1 {
   font-size: 18px;
-  margin: 0 0 12px 0;
-  color: #333;
+  margin: 0;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sidebar.collapsed .sidebar-header h1 {
+  display: none;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.theme-toggle,
+.collapse-toggle {
+  background: transparent;
+  border: 1px solid var(--border-secondary);
+  border-radius: 6px;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.theme-toggle:hover,
+.collapse-toggle:hover {
+  background: var(--hover-bg);
+  color: var(--text-primary);
+  border-color: var(--accent-primary);
+}
+
+.theme-toggle svg,
+.collapse-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.sidebar.collapsed .theme-toggle {
+  display: none;
 }
 
 .new-conversation-btn {
   width: 100%;
   padding: 10px;
-  background: #4a90e2;
-  border: 1px solid #4a90e2;
+  background: var(--accent-primary);
+  border: 1px solid var(--accent-primary);
   border-radius: 6px;
   color: #fff;
   cursor: pointer;
   font-size: 14px;
   transition: background 0.2s;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sidebar.collapsed .new-conversation-btn {
+  padding: 10px 0;
+  font-size: 20px;
 }
 
 .new-conversation-btn:hover {
-  background: #357abd;
-  border-color: #357abd;
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 
 .conversation-list {
@@ -45,8 +111,12 @@
 .no-conversations {
   padding: 16px;
   text-align: center;
-  color: #999;
+  color: var(--text-muted);
   font-size: 14px;
+}
+
+.sidebar.collapsed .no-conversations {
+  display: none;
 }
 
 .conversation-item {
@@ -55,24 +125,52 @@
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.2s;
+  overflow: hidden;
+}
+
+.sidebar.collapsed .conversation-item {
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .conversation-item:hover {
-  background: #f0f0f0;
+  background: var(--hover-bg);
 }
 
 .conversation-item.active {
-  background: #e8f0fe;
-  border: 1px solid #4a90e2;
+  background: var(--accent-light);
+  border: 1px solid var(--accent-primary);
 }
 
 .conversation-title {
-  color: #333;
+  color: var(--text-primary);
   font-size: 14px;
   margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar.collapsed .conversation-title,
+.sidebar.collapsed .conversation-meta {
+  display: none;
+}
+
+.conversation-dot {
+  display: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+}
+
+.sidebar.collapsed .conversation-dot {
+  display: block;
 }
 
 .conversation-meta {
-  color: #999;
+  color: var(--text-muted);
   font-size: 12px;
 }
