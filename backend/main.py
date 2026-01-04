@@ -4,12 +4,14 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import uuid
 import json
 import asyncio
 
 from . import storage
+from . import config
+from . import llm_client
 from .council import run_full_council, generate_conversation_title, stage1_collect_responses, stage2_collect_rankings, stage3_synthesize_final, calculate_aggregate_rankings
 
 app = FastAPI(title="LLM Council API")
@@ -34,6 +36,13 @@ class SendMessageRequest(BaseModel):
     content: str
 
 
+class ConfigUpdate(BaseModel):
+    """Request to update configuration."""
+    council_models: Optional[List[str]] = None
+    chairman_model: Optional[str] = None
+    title_model: Optional[str] = None
+
+
 class ConversationMetadata(BaseModel):
     """Conversation metadata for list view."""
     id: str
@@ -54,6 +63,27 @@ class Conversation(BaseModel):
 async def root():
     """Health check endpoint."""
     return {"status": "ok", "service": "LLM Council API"}
+
+
+@app.get("/api/config/models", response_model=List[str])
+async def list_models():
+    """Fetch available models from LiteLLM."""
+    return await llm_client.fetch_available_models()
+
+
+@app.get("/api/config")
+async def get_config():
+    """Get current configuration."""
+    return config.get_config()
+
+
+@app.post("/api/config")
+async def update_config(request: ConfigUpdate):
+    """Update configuration."""
+    update_data = request.model_dump(exclude_unset=True)
+    if update_data:
+        config.update_config(update_data)
+    return config.get_config()
 
 
 @app.get("/api/conversations", response_model=List[ConversationMetadata])
@@ -77,6 +107,15 @@ async def get_conversation(conversation_id: str):
     if conversation is None:
         raise HTTPException(status_code=404, detail="Conversation not found")
     return conversation
+
+
+@app.delete("/api/conversations/{conversation_id}")
+async def delete_conversation(conversation_id: str):
+    """Delete a conversation."""
+    success = storage.delete_conversation(conversation_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return {"status": "ok", "message": "Conversation deleted"}
 
 
 @app.post("/api/conversations/{conversation_id}/message")

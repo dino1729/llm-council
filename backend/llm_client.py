@@ -29,6 +29,7 @@ async def query_model(
         Response dict with 'content' and optional 'reasoning_details', or None if failed
     """
     try:
+        print(f"DEBUG: Querying model {model}...")
         response = await _client.chat.completions.create(
             model=model,
             messages=messages,
@@ -36,6 +37,7 @@ async def query_model(
         )
 
         message = response.choices[0].message
+        print(f"DEBUG: Model {model} responded.")
 
         return {
             'content': message.content,
@@ -64,3 +66,18 @@ async def query_models_parallel(
     tasks = [query_model(model, messages) for model in models]
     responses = await asyncio.gather(*tasks)
     return {model: response for model, response in zip(models, responses)}
+
+
+async def fetch_available_models() -> List[str]:
+    """
+    Fetch available models from the LiteLLM gateway.
+
+    Returns:
+        List of model identifiers
+    """
+    try:
+        response = await _client.models.list()
+        return [model.id for model in response.data]
+    except Exception as e:
+        print(f"Error fetching models: {e}")
+        return []

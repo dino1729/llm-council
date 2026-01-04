@@ -9,6 +9,7 @@ function App() {
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [currentConversation, setCurrentConversation] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [sendError, setSendError] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     return localStorage.getItem('llm-council-sidebar-collapsed') === 'true';
   });
@@ -44,6 +45,7 @@ function App() {
 
   const loadConversation = async (id) => {
     try {
+      setSendError(false);
       const conv = await api.getConversation(id);
       setCurrentConversation(conv);
     } catch (error) {
@@ -53,6 +55,7 @@ function App() {
 
   const handleNewConversation = async () => {
     try {
+      setSendError(false);
       const newConv = await api.createConversation();
       setConversations([
         { id: newConv.id, created_at: newConv.created_at, message_count: 0 },
@@ -64,22 +67,30 @@ function App() {
     }
   };
 
-  const handleSelectConversation = (id) => {
-    setCurrentConversationId(id);
+  const handleDeleteConversation = async (id) => {
+    try {
+      await api.deleteConversation(id);
+      setConversations(conversations.filter(c => c.id !== id));
+      if (currentConversationId === id) {
+        setCurrentConversationId(null);
+        setCurrentConversation(null);
+        setSendError(false);
+      }
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
+    }
   };
 
-  const handleSendMessage = async (content) => {
-    if (!currentConversationId) return;
+  const handleSelectConversation = (id) => {
+    setCurrentConversationId(id);
+    setSendError(false);
+  };
 
+  const performStreamingRequest = async (conversationId, content) => {
     setIsLoading(true);
-    try {
-      // Optimistically add user message to UI
-      const userMessage = { role: 'user', content };
-      setCurrentConversation((prev) => ({
-        ...prev,
-        messages: [...prev.messages, userMessage],
-      }));
+    setSendError(false);
 
+    try {
       // Create a partial assistant message that will be updated progressively
       const assistantMessage = {
         role: 'assistant',
@@ -101,7 +112,7 @@ function App() {
       }));
 
       // Send message with streaming
-      await api.sendMessageStream(currentConversationId, content, (eventType, event) => {
+      await api.sendMessageStream(conversationId, content, (eventType, event) => {
         switch (eventType) {
           case 'stage1_start':
             setCurrentConversation((prev) => {
@@ -175,6 +186,11 @@ function App() {
           case 'error':
             console.error('Stream error:', event.message);
             setIsLoading(false);
+            setSendError(true);
+            setCurrentConversation((prev) => ({
+              ...prev,
+              messages: prev.messages.slice(0, -1),
+            }));
             break;
 
           default:
@@ -183,12 +199,38 @@ function App() {
       });
     } catch (error) {
       console.error('Failed to send message:', error);
-      // Remove optimistic messages on error
+      // Remove optimistic assistant message on error, but keep user message
       setCurrentConversation((prev) => ({
         ...prev,
-        messages: prev.messages.slice(0, -2),
+        messages: prev.messages.slice(0, -1),
       }));
       setIsLoading(false);
+      setSendError(true);
+    }
+  };
+
+  const handleSendMessage = async (content) => {
+    if (!currentConversationId) return;
+
+    // Optimistically add user message to UI
+    const userMessage = { role: 'user', content };
+    setCurrentConversation((prev) => ({
+      ...prev,
+      messages: [...prev.messages, userMessage],
+    }));
+
+    await performStreamingRequest(currentConversationId, content);
+  };
+
+  const handleRetry = async () => {
+    if (!currentConversation || !currentConversationId) return;
+    
+    const messages = currentConversation.messages;
+    if (messages.length === 0) return;
+    
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage.role === 'user') {
+      await performStreamingRequest(currentConversationId, lastMessage.content);
     }
   };
 
@@ -199,6 +241,7 @@ function App() {
         currentConversationId={currentConversationId}
         onSelectConversation={handleSelectConversation}
         onNewConversation={handleNewConversation}
+        onDeleteConversation={handleDeleteConversation}
         collapsed={sidebarCollapsed}
         onToggleCollapse={handleToggleSidebar}
       />
@@ -206,6 +249,8 @@ function App() {
         conversation={currentConversation}
         onSendMessage={handleSendMessage}
         isLoading={isLoading}
+        sendError={sendError}
+        onRetry={handleRetry}
       />
     </div>
   );

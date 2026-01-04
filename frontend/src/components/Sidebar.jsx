@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import ConfigModal from './ConfigModal';
 import './Sidebar.css';
 
 // Sun icon for light mode
@@ -23,6 +24,14 @@ const MoonIcon = () => (
   </svg>
 );
 
+// Settings icon
+const SettingsIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3"></circle>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+  </svg>
+);
+
 // Chevron icons for collapse toggle
 const ChevronLeftIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -36,17 +45,26 @@ const ChevronRightIcon = () => (
   </svg>
 );
 
+const TrashIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6"></polyline>
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+  </svg>
+);
+
 export default function Sidebar({
   conversations,
   currentConversationId,
   onSelectConversation,
   onNewConversation,
+  onDeleteConversation,
   collapsed,
   onToggleCollapse,
 }) {
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('llm-council-theme') || 'light';
   });
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
 
   // Apply theme on mount and when theme changes
   useEffect(() => {
@@ -57,58 +75,86 @@ export default function Sidebar({
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
+  
+  const handleDelete = (e, id) => {
+    e.stopPropagation();
+    if (window.confirm('Are you sure you want to delete this conversation?')) {
+      onDeleteConversation(id);
+    }
+  };
 
   return (
-    <div className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
-      <div className="sidebar-header">
-        <div className="sidebar-header-row">
-          <h1>LLM Council</h1>
-          <div className="header-buttons">
-            <button
-              className="theme-toggle"
-              onClick={toggleTheme}
-              title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-            >
-              {theme === 'light' ? <MoonIcon /> : <SunIcon />}
-            </button>
-            <button
-              className="collapse-toggle"
-              onClick={onToggleCollapse}
-              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-              {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-            </button>
-          </div>
-        </div>
-        <button className="new-conversation-btn" onClick={onNewConversation}>
-          {collapsed ? '+' : '+ New Conversation'}
-        </button>
-      </div>
-
-      <div className="conversation-list">
-        {conversations.length === 0 ? (
-          <div className="no-conversations">No conversations yet</div>
-        ) : (
-          conversations.map((conv) => (
-            <div
-              key={conv.id}
-              className={`conversation-item ${
-                conv.id === currentConversationId ? 'active' : ''
-              }`}
-              onClick={() => onSelectConversation(conv.id)}
-              title={collapsed ? (conv.title || 'New Conversation') : undefined}
-            >
-              <div className="conversation-dot" />
-              <div className="conversation-title">
-                {conv.title || 'New Conversation'}
-              </div>
-              <div className="conversation-meta">
-                {conv.message_count} messages
-              </div>
+    <>
+      <div className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+        <div className="sidebar-header">
+          <div className="sidebar-header-row">
+            <h1>LLM Council</h1>
+            <div className="header-buttons">
+              <button
+                className="theme-toggle"
+                onClick={() => setIsConfigOpen(true)}
+                title="Configuration"
+              >
+                <SettingsIcon />
+              </button>
+              <button
+                className="theme-toggle"
+                onClick={toggleTheme}
+                title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+              >
+                {theme === 'light' ? <MoonIcon /> : <SunIcon />}
+              </button>
+              <button
+                className="collapse-toggle"
+                onClick={onToggleCollapse}
+                title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+              </button>
             </div>
-          ))
-        )}
+          </div>
+          <button className="new-conversation-btn" onClick={onNewConversation}>
+            {collapsed ? '+' : '+ New Conversation'}
+          </button>
+        </div>
+
+        <div className="conversation-list">
+          {conversations.length === 0 ? (
+            <div className="no-conversations">No conversations yet</div>
+          ) : (
+            conversations.map((conv) => (
+              <div
+                key={conv.id}
+                className={`conversation-item ${
+                  conv.id === currentConversationId ? 'active' : ''
+                }`}
+                onClick={() => onSelectConversation(conv.id)}
+                title={collapsed ? (conv.title || 'New Conversation') : undefined}
+              >
+                <div className="conversation-dot" />
+                <div className="conversation-content">
+                  <div className="conversation-title">
+                    {conv.title || 'New Conversation'}
+                  </div>
+                  <div className="conversation-meta">
+                    {conv.message_count} messages
+                  </div>
+                </div>
+                {!collapsed && (
+                  <button 
+                    className="delete-btn"
+                    onClick={(e) => handleDelete(e, conv.id)}
+                    title="Delete conversation"
+                  >
+                    <TrashIcon />
+                  </button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
       </div>
-    </div>
+      <ConfigModal isOpen={isConfigOpen} onClose={() => setIsConfigOpen(false)} />
+    </>
   );
 }

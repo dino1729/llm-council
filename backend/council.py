@@ -2,7 +2,7 @@
 
 from typing import List, Dict, Any, Tuple
 from .llm_client import query_models_parallel, query_model
-from .config import COUNCIL_MODELS, CHAIRMAN_MODEL, TITLE_MODEL
+from . import config
 
 
 async def stage1_collect_responses(user_query: str) -> List[Dict[str, Any]]:
@@ -15,10 +15,19 @@ async def stage1_collect_responses(user_query: str) -> List[Dict[str, Any]]:
     Returns:
         List of dicts with 'model' and 'response' keys
     """
+    print(f"DEBUG: Starting Stage 1 with models: {config.COUNCIL_MODELS}")
     messages = [{"role": "user", "content": user_query}]
 
+    if not config.COUNCIL_MODELS:
+        print("DEBUG: No council models configured!")
+        return []
+
     # Query all models in parallel
-    responses = await query_models_parallel(COUNCIL_MODELS, messages)
+    try:
+        responses = await query_models_parallel(config.COUNCIL_MODELS, messages)
+    except Exception as e:
+        print(f"DEBUG: Error in query_models_parallel: {e}")
+        return []
 
     # Format results
     stage1_results = []
@@ -28,7 +37,8 @@ async def stage1_collect_responses(user_query: str) -> List[Dict[str, Any]]:
                 "model": model,
                 "response": response.get('content', '')
             })
-
+    
+    print(f"DEBUG: Stage 1 complete. Got {len(stage1_results)} responses.")
     return stage1_results
 
 
@@ -95,7 +105,7 @@ Now provide your evaluation and ranking:"""
     messages = [{"role": "user", "content": ranking_prompt}]
 
     # Get rankings from all council models in parallel
-    responses = await query_models_parallel(COUNCIL_MODELS, messages)
+    responses = await query_models_parallel(config.COUNCIL_MODELS, messages)
 
     # Format results
     stage2_results = []
@@ -159,17 +169,17 @@ Provide a clear, well-reasoned final answer that represents the council's collec
     messages = [{"role": "user", "content": chairman_prompt}]
 
     # Query the chairman model
-    response = await query_model(CHAIRMAN_MODEL, messages)
+    response = await query_model(config.CHAIRMAN_MODEL, messages)
 
     if response is None:
         # Fallback if chairman fails
         return {
-            "model": CHAIRMAN_MODEL,
+            "model": config.CHAIRMAN_MODEL,
             "response": "Error: Unable to generate final synthesis."
         }
 
     return {
-        "model": CHAIRMAN_MODEL,
+        "model": config.CHAIRMAN_MODEL,
         "response": response.get('content', '')
     }
 
@@ -275,7 +285,7 @@ Title:"""
     messages = [{"role": "user", "content": title_prompt}]
 
     # Use fast model for title generation
-    response = await query_model(TITLE_MODEL, messages, timeout=30.0)
+    response = await query_model(config.TITLE_MODEL, messages, timeout=30.0)
 
     if response is None:
         # Fallback to a generic title

@@ -47,6 +47,22 @@ export const api = {
   },
 
   /**
+   * Delete a conversation.
+   */
+  async deleteConversation(conversationId) {
+    const response = await fetch(
+      `${API_BASE}/api/conversations/${conversationId}`,
+      {
+        method: 'DELETE',
+      }
+    );
+    if (!response.ok) {
+      throw new Error('Failed to delete conversation');
+    }
+    return response.json();
+  },
+
+  /**
    * Send a message in a conversation.
    */
   async sendMessage(conversationId, content) {
@@ -111,5 +127,44 @@ export const api = {
         }
       }
     }
+  },
+
+  /**
+   * Get current configuration.
+   */
+  async getConfig() {
+    const response = await fetch(`${API_BASE}/api/config`);
+    if (!response.ok) {
+      throw new Error('Failed to get configuration');
+    }
+    return response.json();
+  },
+
+  /**
+   * Update configuration.
+   */
+  async updateConfig(config) {
+    const response = await fetch(`${API_BASE}/api/config`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(config),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to update configuration');
+    }
+    return response.json();
+  },
+
+  /**
+   * Fetch available models from LiteLLM.
+   */
+  async listAvailableModels() {
+    const response = await fetch(`${API_BASE}/api/config/models`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch available models');
+    }
+    return response.json();
   },
 };

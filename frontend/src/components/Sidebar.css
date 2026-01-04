@@ -126,12 +126,13 @@
   cursor: pointer;
   transition: background 0.2s;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .sidebar.collapsed .conversation-item {
   padding: 8px;
-  display: flex;
-  align-items: center;
   justify-content: center;
 }
 
@@ -142,6 +143,11 @@
 .conversation-item.active {
   background: var(--accent-light);
   border: 1px solid var(--accent-primary);
+}
+
+.conversation-content {
+  flex: 1;
+  min-width: 0;
 }
 
 .conversation-title {
@@ -164,6 +170,7 @@
   height: 8px;
   border-radius: 50%;
   background: var(--accent-primary);
+  flex-shrink: 0;
 }
 
 .sidebar.collapsed .conversation-dot {
@@ -173,4 +180,32 @@
 .conversation-meta {
   color: var(--text-muted);
   font-size: 12px;
+}
+
+.delete-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.conversation-item:hover .delete-btn {
+  opacity: 1;
+}
+
+.delete-btn:hover {
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.1);
 }

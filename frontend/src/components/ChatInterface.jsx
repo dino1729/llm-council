@@ -43,17 +43,32 @@ export default function ChatInterface({
   conversation,
   onSendMessage,
   isLoading,
+  sendError,
+  onRetry,
 }) {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
+  const containerRef = useRef(null);
+  const prevConversationId = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [conversation]);
+    if (!conversation) return;
+
+    if (conversation.id !== prevConversationId.current) {
+      // Conversation switched - scroll to top
+      prevConversationId.current = conversation.id;
+      if (containerRef.current) {
+        containerRef.current.scrollTop = 0;
+      }
+    } else {
+      // Same conversation updated (new message or streaming) - scroll to bottom
+      scrollToBottom();
+    }
+  }, [conversation, sendError]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -84,7 +99,7 @@ export default function ChatInterface({
 
   return (
     <div className="chat-interface">
-      <div className="messages-container">
+      <div className="messages-container" ref={containerRef}>
         {conversation.messages.length === 0 ? (
           <div className="empty-state">
             <h2>Start a conversation</h2>
@@ -148,6 +163,17 @@ export default function ChatInterface({
           <div className="loading-indicator">
             <div className="spinner"></div>
             <span>Consulting the council...</span>
+          </div>
+        )}
+
+        {sendError && (
+          <div className="error-container">
+            <div className="error-message">
+              Failed to get response from the council.
+            </div>
+            <button className="retry-button" onClick={onRetry}>
+              Retry
+            </button>
           </div>
         )}
 
